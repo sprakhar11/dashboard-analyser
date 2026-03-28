@@ -6,12 +6,12 @@
 
     <parent>
         <groupId>com.example</groupId>
-        <artifactId>ping-parent</artifactId>
+        <artifactId>dashboard-analyser</artifactId>
         <version>1.0.0</version>
     </parent>
 
-    <artifactId>ping-service</artifactId>
-    <name>ping-service</name>
+    <artifactId>pingService</artifactId>
+    <name>pingService</name>
     <description>Spring Boot ping service application</description>
 
     <dependencies>

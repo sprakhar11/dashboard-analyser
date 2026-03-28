@@ -12,11 +12,11 @@
     </parent>
 
     <groupId>com.example</groupId>
-    <artifactId>ping-parent</artifactId>
+    <artifactId>dashboard-analyser</artifactId>
     <version>1.0.0</version>
     <packaging>pom</packaging>
-    <name>ping-parent</name>
-    <description>Parent POM for multi-module ping project</description>
+    <name>dashboard-analyser</name>
+    <description>Parent POM for multi-module dashboard analyser project</description>
 
     <modules>
         <module>commons</module>

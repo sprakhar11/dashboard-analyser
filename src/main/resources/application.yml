@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:pingdb}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:secret}
+    driver-class-name: org.postgresql.Driver
+
+app:
+  name: ping-service
+  version: 1.0.0
+
+server:
+  port: ${SERVER_PORT:8080}

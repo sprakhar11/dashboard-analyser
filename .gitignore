@@ -1,0 +1,28 @@
+# Environment variables
+.env
+
+# Build output
+target/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.kiro/
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+
+# Kotlin
+*.class
+*.jar
+*.war
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

@@ -1,0 +1,7 @@
+target/
+.idea/
+.kiro/
+.env
+*.iml
+.DS_Store
+.git/

@@ -21,6 +21,7 @@
     <modules>
         <module>commons</module>
         <module>pingService</module>
+        <module>auth</module>
     </modules>
 
     <properties>

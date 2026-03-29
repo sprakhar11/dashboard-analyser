@@ -5,14 +5,17 @@ import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 
 data class RegisterRequest(
     @field:NotBlank(message = "Name is required")
     @field:Size(min = 1, max = 100, message = "Name must be between 1 and 100 characters")
+    @field:Pattern(regexp = "^[a-zA-Z ]+$", message = "Name must contain only alphabets and spaces")
     val name: String = "",
 
     @field:NotBlank(message = "Email is required")
+    @field:Size(max = 255, message = "Email must not exceed 255 characters")
     @field:Email(message = "Email must be a valid email address")
     val email: String = "",
 

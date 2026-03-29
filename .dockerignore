@@ -4,4 +4,3 @@ target/
 .env
 *.iml
 .DS_Store
-.git/

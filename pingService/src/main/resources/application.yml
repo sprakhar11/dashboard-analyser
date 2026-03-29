@@ -6,9 +6,7 @@ spring:
     driver-class-name: org.postgresql.Driver
 
 app:
-  name: ping-service
-  version: 1.0.0
-  git-commit: ${GIT_COMMIT:unknown}
+  name: dashboard-analyser
 
 server:
   port: ${PORT:8080}

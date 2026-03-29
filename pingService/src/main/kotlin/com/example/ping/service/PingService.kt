@@ -9,8 +9,8 @@ import java.time.Instant
 @Service
 class PingService(
     @Value("\${app.name}") private val appName: String,
-    @Value("\${app.version}") private val appVersion: String,
-    @Value("\${app.git-commit:unknown}") private val gitCommit: String,
+    @Value("\${git.commit.id.abbrev:unknown}") private val gitCommit: String,
+    @Value("\${git.commit.time:unknown}") private val gitCommitTime: String,
     private val healthCheckMapper: HealthCheckMapper
 ) {
     fun getPingResponse(): PingResponse {
@@ -22,8 +22,9 @@ class PingService(
         }
         return PingResponse(
             appName = appName,
-            appVersion = appVersion,
+            appVersion = gitCommit,
             gitCommit = gitCommit,
+            gitCommitTime = gitCommitTime,
             timestamp = Instant.now().toString(),
             databaseStatus = dbStatus
         )

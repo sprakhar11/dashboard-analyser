@@ -5,9 +5,11 @@ COPY pom.xml mvnw ./
 COPY .mvn .mvn
 COPY commons/pom.xml commons/pom.xml
 COPY pingService/pom.xml pingService/pom.xml
+COPY auth/pom.xml auth/pom.xml
 RUN chmod +x mvnw && ./mvnw dependency:go-offline -B
 COPY commons/src commons/src
 COPY pingService/src pingService/src
+COPY auth/src auth/src
 RUN ./mvnw package -DskipTests -B
 
 # Stage 2: Run

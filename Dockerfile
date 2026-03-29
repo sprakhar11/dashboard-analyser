@@ -3,7 +3,6 @@ FROM eclipse-temurin:17-jdk-alpine AS build
 WORKDIR /app
 COPY pom.xml mvnw ./
 COPY .mvn .mvn
-COPY .git .git
 COPY commons/pom.xml commons/pom.xml
 COPY pingService/pom.xml pingService/pom.xml
 COPY auth/pom.xml auth/pom.xml

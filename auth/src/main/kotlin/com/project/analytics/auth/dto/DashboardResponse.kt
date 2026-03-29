@@ -1,6 +1,6 @@
 package com.project.analytics.auth.dto
 
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 data class DashboardResponse(
     val success: Boolean,
@@ -14,8 +14,8 @@ data class DashboardData(
 )
 
 data class DashboardSummary(
-    val fromDate: LocalDate,
-    val toDate: LocalDate,
+    val fromDate: LocalDateTime? = null,
+    val toDate: LocalDateTime? = null,
     val ageBucketId: Short? = null,
     val genderId: Short? = null,
     val selectedFeatureId: Short

@@ -14,6 +14,8 @@ server:
 auth:
   token:
     expiry-hours: ${AUTH_TOKEN_EXPIRY_HOURS:24}
+  password:
+    secret-key: ${PASSWORD_SECRET_KEY:default-dev-secret-change-in-production}
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}

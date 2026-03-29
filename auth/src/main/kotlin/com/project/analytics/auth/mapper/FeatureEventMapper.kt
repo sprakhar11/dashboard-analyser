@@ -4,7 +4,7 @@ import com.project.analytics.auth.dto.FeatureTotalItem
 import com.project.analytics.auth.dto.TrendPoint
 import com.project.analytics.auth.model.FeatureEvent
 import org.apache.ibatis.annotations.*
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Mapper
 interface FeatureEventMapper {
@@ -27,7 +27,8 @@ interface FeatureEventMapper {
             ON f.id = e.feature_id
            AND f.delete_info IS NULL
         WHERE e.delete_info IS NULL
-          AND e.event_date BETWEEN #{fromDate} AND #{toDate}
+          <if test="fromDate != null">AND e.event_time &gt;= #{fromDate}</if>
+          <if test="toDate != null">AND e.event_time &lt;= #{toDate}</if>
           <if test="ageBucketId != null">AND e.age_bucket_id = #{ageBucketId}</if>
           <if test="genderId != null">AND e.gender_id = #{genderId}</if>
         GROUP BY f.id, f.name
@@ -40,8 +41,8 @@ interface FeatureEventMapper {
         Result(property = "totalCount", column = "total_count")
     )
     fun getFeatureTotals(
-        @Param("fromDate") fromDate: LocalDate,
-        @Param("toDate") toDate: LocalDate,
+        @Param("fromDate") fromDate: LocalDateTime?,
+        @Param("toDate") toDate: LocalDateTime?,
         @Param("ageBucketId") ageBucketId: Short?,
         @Param("genderId") genderId: Short?
     ): List<FeatureTotalItem>
@@ -54,7 +55,8 @@ interface FeatureEventMapper {
         FROM app.feature_event e
         WHERE e.delete_info IS NULL
           AND e.feature_id = #{featureId}
-          AND e.event_date BETWEEN #{fromDate} AND #{toDate}
+          <if test="fromDate != null">AND e.event_time &gt;= #{fromDate}</if>
+          <if test="toDate != null">AND e.event_time &lt;= #{toDate}</if>
           <if test="ageBucketId != null">AND e.age_bucket_id = #{ageBucketId}</if>
           <if test="genderId != null">AND e.gender_id = #{genderId}</if>
         GROUP BY e.event_date
@@ -67,8 +69,8 @@ interface FeatureEventMapper {
     )
     fun getDailyTrend(
         @Param("featureId") featureId: Short,
-        @Param("fromDate") fromDate: LocalDate,
-        @Param("toDate") toDate: LocalDate,
+        @Param("fromDate") fromDate: LocalDateTime?,
+        @Param("toDate") toDate: LocalDateTime?,
         @Param("ageBucketId") ageBucketId: Short?,
         @Param("genderId") genderId: Short?
     ): List<TrendPoint>
@@ -86,7 +88,8 @@ interface FeatureEventMapper {
         FROM app.feature_event e
         WHERE e.delete_info IS NULL
           AND e.feature_id = #{featureId}
-          AND e.event_date BETWEEN #{fromDate} AND #{toDate}
+          <if test="fromDate != null">AND e.event_time &gt;= #{fromDate}</if>
+          <if test="toDate != null">AND e.event_time &lt;= #{toDate}</if>
           <if test="ageBucketId != null">AND e.age_bucket_id = #{ageBucketId}</if>
           <if test="genderId != null">AND e.gender_id = #{genderId}</if>
         GROUP BY e.event_date, e.event_hour
@@ -99,8 +102,8 @@ interface FeatureEventMapper {
     )
     fun getHourlyTrend(
         @Param("featureId") featureId: Short,
-        @Param("fromDate") fromDate: LocalDate,
-        @Param("toDate") toDate: LocalDate,
+        @Param("fromDate") fromDate: LocalDateTime?,
+        @Param("toDate") toDate: LocalDateTime?,
         @Param("ageBucketId") ageBucketId: Short?,
         @Param("genderId") genderId: Short?
     ): List<TrendPoint>

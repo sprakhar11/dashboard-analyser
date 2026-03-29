@@ -23,6 +23,7 @@ class AuthService(
     private val authTokenMapper: AuthTokenMapper,
     private val genderMapper: GenderMapper,
     private val ageBucketMapper: AgeBucketMapper,
+    private val passwordUtil: PasswordUtil,
     @Value("\${auth.token.expiry-hours}") private val tokenExpiryHours: Long
 ) {
 
@@ -41,7 +42,7 @@ class AuthService(
         val user = User(
             name = request.name,
             email = request.email,
-            passwordHash = PasswordUtil.hash(request.password),
+            passwordHash = passwordUtil.hash(request.password),
             age = request.age,
             genderId = request.genderId,
             ageBucketId = ageBucket.id!!
@@ -62,7 +63,7 @@ class AuthService(
         val user = userMapper.findActiveByEmail(request.email)
             ?: throw InvalidCredentialsException()
 
-        if (!PasswordUtil.verify(request.password, user.passwordHash)) {
+        if (!passwordUtil.verify(request.password, user.passwordHash)) {
             throw InvalidCredentialsException()
         }
 

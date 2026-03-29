@@ -4,7 +4,7 @@ import com.project.analytics.auth.dto.*
 import com.project.analytics.auth.service.AnalyticsService
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.*
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 @RestController
 @RequestMapping("/api/analytics")
@@ -17,8 +17,8 @@ class AnalyticsController(private val analyticsService: AnalyticsService) {
 
     @GetMapping("/features")
     fun getFeatureTotals(
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fromDate: LocalDate,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) toDate: LocalDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) fromDate: LocalDateTime?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) toDate: LocalDateTime?,
         @RequestParam(required = false) ageBucketId: Short?,
         @RequestParam(required = false) genderId: Short?
     ): FeatureTotalsResponse {
@@ -28,8 +28,8 @@ class AnalyticsController(private val analyticsService: AnalyticsService) {
     @GetMapping("/features/{featureId}/trend")
     fun getFeatureTrend(
         @PathVariable featureId: Short,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fromDate: LocalDate,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) toDate: LocalDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) fromDate: LocalDateTime?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) toDate: LocalDateTime?,
         @RequestParam bucket: String,
         @RequestParam(required = false) ageBucketId: Short?,
         @RequestParam(required = false) genderId: Short?
@@ -39,8 +39,8 @@ class AnalyticsController(private val analyticsService: AnalyticsService) {
 
     @GetMapping("/dashboard")
     fun getDashboard(
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) fromDate: LocalDate,
-        @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) toDate: LocalDate,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) fromDate: LocalDateTime?,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) toDate: LocalDateTime?,
         @RequestParam selectedFeatureId: Short,
         @RequestParam(required = false) ageBucketId: Short?,
         @RequestParam(required = false) genderId: Short?

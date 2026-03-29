@@ -5,7 +5,7 @@ import com.project.analytics.auth.FeatureNotFoundException
 import com.project.analytics.auth.dto.*
 import com.project.analytics.auth.mapper.*
 import org.springframework.stereotype.Service
-import java.time.LocalDate
+import java.time.LocalDateTime
 
 @Service
 class AnalyticsService(
@@ -34,8 +34,8 @@ class AnalyticsService(
     }
 
     fun getFeatureTotals(
-        fromDate: LocalDate,
-        toDate: LocalDate,
+        fromDate: LocalDateTime?,
+        toDate: LocalDateTime?,
         ageBucketId: Short?,
         genderId: Short?
     ): FeatureTotalsResponse {
@@ -51,8 +51,8 @@ class AnalyticsService(
 
     fun getFeatureTrend(
         featureId: Short,
-        fromDate: LocalDate,
-        toDate: LocalDate,
+        fromDate: LocalDateTime?,
+        toDate: LocalDateTime?,
         bucket: String,
         ageBucketId: Short?,
         genderId: Short?
@@ -82,8 +82,8 @@ class AnalyticsService(
     }
 
     fun getDashboard(
-        fromDate: LocalDate,
-        toDate: LocalDate,
+        fromDate: LocalDateTime?,
+        toDate: LocalDateTime?,
         selectedFeatureId: Short,
         ageBucketId: Short?,
         genderId: Short?

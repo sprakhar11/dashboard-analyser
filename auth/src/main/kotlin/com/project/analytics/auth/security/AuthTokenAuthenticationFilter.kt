@@ -35,7 +35,7 @@ class AuthTokenAuthenticationFilter(
             val authToken = authTokenMapper.findActiveByToken(token)
             if (authToken != null) {
                 val authentication = UsernamePasswordAuthenticationToken(
-                    authToken.userId, null, emptyList()
+                    AuthenticatedUser(authToken.userId, authToken.id!!, authToken.browserId ?: "UNKNOWN"), null, emptyList()
                 )
                 SecurityContextHolder.getContext().authentication = authentication
                 filterChain.doFilter(request, response)

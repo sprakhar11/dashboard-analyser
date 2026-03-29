@@ -11,7 +11,7 @@ interface AuthTokenMapper {
         SELECT id, user_id, token, browser_id, add_date, log_out_date, expiry_date, delete_info
         FROM app.auth_token
         WHERE token = #{token}
-          AND (delete_info IS NULL OR delete_info->>'deleted' != 'true')
+          AND delete_info IS NULL
           AND log_out_date IS NULL
           AND expiry_date > now()
     """)
@@ -32,7 +32,7 @@ interface AuthTokenMapper {
         FROM app.auth_token
         WHERE user_id = #{userId}
           AND browser_id = #{browserId}
-          AND (delete_info IS NULL OR delete_info->>'deleted' != 'true')
+          AND delete_info IS NULL
           AND log_out_date IS NULL
           AND expiry_date > now()
     """)
@@ -52,7 +52,7 @@ interface AuthTokenMapper {
         SELECT id, user_id, token, browser_id, add_date, log_out_date, expiry_date, delete_info
         FROM app.auth_token
         WHERE user_id = #{userId}
-          AND (delete_info IS NULL OR delete_info->>'deleted' != 'true')
+          AND delete_info IS NULL
           AND log_out_date IS NULL
           AND expiry_date > now()
         LIMIT 1

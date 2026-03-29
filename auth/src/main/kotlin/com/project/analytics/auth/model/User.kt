@@ -8,6 +8,9 @@ data class User(
     val email: String,
     val passwordHash: String,
     val multipleSessionAllowed: Boolean = false,
+    val age: Int? = null,
+    val genderId: Short? = null,
+    val ageBucketId: Short? = null,
     val addDate: LocalDateTime? = null,
     val deleteInfo: String? = null
 )

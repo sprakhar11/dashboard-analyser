@@ -1,7 +1,9 @@
 package com.project.analytics.auth.controller
 
 import com.project.analytics.auth.dto.*
+import com.project.analytics.auth.security.AuthenticatedUser
 import com.project.analytics.auth.service.AuthService
+import jakarta.validation.Valid
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
@@ -10,7 +12,7 @@ import org.springframework.web.bind.annotation.*
 class AuthController(private val authService: AuthService) {
 
     @PostMapping("/register")
-    fun register(@RequestBody request: RegisterRequest): RegisterResponse {
+    fun register(@Valid @RequestBody request: RegisterRequest): RegisterResponse {
         return authService.register(request)
     }
 
@@ -27,7 +29,8 @@ class AuthController(private val authService: AuthService) {
 
     @GetMapping("/me")
     fun me(): MeResponse {
-        val userId = SecurityContextHolder.getContext().authentication.principal as Long
+        val principal = SecurityContextHolder.getContext().authentication.principal as AuthenticatedUser
+        val userId = principal.userId
         return authService.getCurrentUser(userId)
     }
 }

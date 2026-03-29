@@ -3,8 +3,11 @@ package com.project.analytics.auth.service
 import com.project.analytics.auth.AlreadyLoggedInException
 import com.project.analytics.auth.EmailAlreadyExistsException
 import com.project.analytics.auth.InvalidCredentialsException
+import com.project.analytics.auth.RegistrationValidationException
 import com.project.analytics.auth.dto.*
+import com.project.analytics.auth.mapper.AgeBucketMapper
 import com.project.analytics.auth.mapper.AuthTokenMapper
+import com.project.analytics.auth.mapper.GenderMapper
 import com.project.analytics.auth.mapper.UserMapper
 import com.project.analytics.auth.model.AuthToken
 import com.project.analytics.auth.model.User
@@ -18,6 +21,8 @@ import java.util.UUID
 class AuthService(
     private val userMapper: UserMapper,
     private val authTokenMapper: AuthTokenMapper,
+    private val genderMapper: GenderMapper,
+    private val ageBucketMapper: AgeBucketMapper,
     @Value("\${auth.token.expiry-hours}") private val tokenExpiryHours: Long
 ) {
 
@@ -26,31 +31,41 @@ class AuthService(
             throw EmailAlreadyExistsException()
         }
 
+        val gender = genderMapper.findActiveById(request.genderId!!)
+            ?: throw RegistrationValidationException("Invalid gender ID: ${request.genderId}. Use GET /api/analytics/config to see valid options.")
+
+        // Auto-resolve ageBucketId from age for the DB FK constraint
+        val ageBucket = ageBucketMapper.findByAge(request.age!!)
+            ?: throw RegistrationValidationException("No matching age bucket found for age: ${request.age}")
+
         val user = User(
             name = request.name,
             email = request.email,
-            passwordHash = PasswordUtil.hash(request.password)
+            passwordHash = PasswordUtil.hash(request.password),
+            age = request.age,
+            genderId = request.genderId,
+            ageBucketId = ageBucket.id!!
         )
         userMapper.insert(user)
 
         return RegisterResponse(
             userId = user.id!!,
+            name = user.name,
             email = user.email,
+            age = user.age!!,
+            gender = GenderInfo(id = gender.id!!, code = gender.code, name = gender.name),
             message = "User registered successfully"
         )
     }
 
     fun login(request: LoginRequest): LoginResponse {
-        // 1. Find user by email → not found = InvalidCredentialsException
         val user = userMapper.findActiveByEmail(request.email)
             ?: throw InvalidCredentialsException()
 
-        // 2. Verify password → wrong = InvalidCredentialsException
         if (!PasswordUtil.verify(request.password, user.passwordHash)) {
             throw InvalidCredentialsException()
         }
 
-        // 3. Check active token for same browser_id → found = return existing (sameBrowserReuse=true)
         val existingBrowserToken = authTokenMapper.findActiveByUserIdAndBrowserId(user.id!!, request.browserId)
         if (existingBrowserToken != null) {
             return LoginResponse(
@@ -62,13 +77,11 @@ class AuthService(
             )
         }
 
-        // 4. Check any active token → found AND !multipleSessionAllowed = AlreadyLoggedInException
         val anyActiveToken = authTokenMapper.findAnyActiveByUserId(user.id)
         if (anyActiveToken != null && !user.multipleSessionAllowed) {
             throw AlreadyLoggedInException()
         }
 
-        // 5. Otherwise create new token (sameBrowserReuse=false)
         val now = LocalDateTime.now()
         val newToken = AuthToken(
             userId = user.id,
@@ -96,10 +109,18 @@ class AuthService(
         val user = userMapper.findActiveById(userId)
             ?: throw InvalidCredentialsException()
 
+        val gender = genderMapper.findActiveById(user.genderId!!)
+
         return MeResponse(
             userId = user.id!!,
             name = user.name,
-            email = user.email
+            email = user.email,
+            age = user.age ?: 0,
+            gender = GenderInfo(
+                id = gender!!.id!!,
+                code = gender.code,
+                name = gender.name
+            )
         )
     }
 }

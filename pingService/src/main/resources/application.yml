@@ -8,6 +8,7 @@ spring:
 app:
   name: ping-service
   version: 1.0.0
+  git-commit: ${GIT_COMMIT:unknown}
 
 server:
   port: ${PORT:8080}

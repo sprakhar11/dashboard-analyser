@@ -218,3 +218,93 @@ This creates 5 users and ~80 feature events spread across the last 7 days.
 ## License
 
 See [LICENSE](LICENSE) file.
+
+---
+
+## Scaling POST /api/track to 1 Million Requests Per Second
+
+### What We Have Today
+
+A single `POST /api/track` endpoint. When a user clicks a filter, selects a date range, or interacts with a chart, the frontend calls this API. The backend validates the request, looks up user info, and inserts one row into `app.feature_event` in PostgreSQL.
+
+Current write path (5 database calls per request):
+1. Check auth token (SELECT)
+2. Check featureId is valid (SELECT)
+3. Check eventTypeId is valid (SELECT)
+4. Get user's gender and age bucket (SELECT)
+5. Insert the event row (INSERT)
+
+This works fine for small traffic. But each request waits for all 5 database calls to finish before responding. As traffic grows, the database becomes the bottleneck.
+
+### What Slows Us Down
+
+- 5 database round trips per request — most are lookups for data that rarely changes
+- Single PostgreSQL instance — one server handling all writes
+- 7 indexes on the event table — every INSERT updates all 7
+- Foreign key checks on 6 tables — PostgreSQL locks parent rows briefly on every INSERT
+- BIGSERIAL primary key — a global counter that all inserts compete for
+- Generated columns (event_date, event_hour) — extra computation on every INSERT
+
+### Phase 1: Stop Hitting the Database for Things That Don't Change (~5K RPS)
+
+The biggest win with zero infrastructure changes.
+
+Cache dimension data (features, event types, genders, age buckets) in memory — these are small tables that almost never change. Cache user dimensions and auth tokens with short TTLs. This drops database calls from 5 to 1 (just the INSERT).
+
+Then stop waiting for the INSERT to finish — return 202 Accepted immediately and write in the background. Response time drops from ~50ms to ~2ms.
+
+Result: ~5K RPS on a single server. No new infrastructure. Just code changes.
+
+### Phase 2: Write in Batches (~50K RPS)
+
+One INSERT of 1000 rows is ~100x faster than 1000 individual INSERTs. Buffer events in memory, flush every 100ms as a single multi-row INSERT.
+
+Add a message queue (like Redis or Kafka) as a durable buffer so events aren't lost if the app crashes. Drop foreign key constraints (already validated in app layer) and unused indexes to reduce write overhead.
+
+Result: ~50K RPS.
+
+### Phase 3: Run Multiple Copies of the App (~200K RPS)
+
+A load balancer distributes requests across multiple identical app instances (4-8 copies). Each pushes to the same message queue. Workers pull batches and insert into PostgreSQL.
+
+Add PgBouncer (a connection pooler) between workers and PostgreSQL. Tune PostgreSQL with `synchronous_commit = off` for async disk writes — the single biggest throughput win.
+
+Result: ~200K RPS.
+
+### Phase 4: Separate Ingestion from Storage (~500K RPS)
+
+Replace the simple message queue with Apache Kafka — a distributed, durable, high-throughput event log. The track endpoint writes to Kafka (< 1ms), consumers read in batches and insert into PostgreSQL.
+
+Partition the database table by month so INSERTs only touch the current month's smaller indexes. Old months can be archived or dropped.
+
+Result: ~500K RPS.
+
+### Phase 5: Distribute the Database (~1M RPS)
+
+A single PostgreSQL can't handle this write volume. Use Citus (distributed PostgreSQL) to shard the table across multiple servers, or TimescaleDB for automatic time-based partitioning and compression.
+
+Full architecture: 20 app instances → Kafka (16 partitions) → 16 consumers → PgBouncer → distributed PostgreSQL.
+
+Result: 1M RPS.
+
+### Scaling Summary
+
+| Phase | Target RPS | What Changes |
+|-------|-----------|-------------|
+| 0 (Current) | ~100 | Synchronous, 5 DB calls per request |
+| 1 | ~5K | Cache lookups in memory, async response |
+| 2 | ~50K | Batch writes, message queue, drop FKs/indexes |
+| 3 | ~200K | Multiple app instances, connection pooler, PG tuning |
+| 4 | ~500K | Kafka, table partitioning by month |
+| 5 | ~1M | Distributed PostgreSQL, 20 app pods, 16 Kafka consumers |
+
+### Key Principles
+
+1. Don't over-build early. Phase 1 gets 50x improvement with just code changes.
+2. Batch everything. 1000-row INSERT is ~100x faster than 1000 individual INSERTs.
+3. Don't make the client wait for the database. Accept, respond, write later.
+4. Cache things that don't change often.
+5. Tune PostgreSQL before adding servers.
+6. Partition tables before sharding databases.
+7. Measure before optimizing.
+8. Analytics events are not bank transactions — losing a few in a crash is acceptable.

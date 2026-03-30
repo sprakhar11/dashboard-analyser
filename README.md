@@ -221,7 +221,9 @@ See [LICENSE](LICENSE) file.
 
 ---
 
-## Scaling POST /api/track to 1 Million Requests Per Second
+## Scaling POST /api/track to 1 Million Requests Per Minute
+
+1M per minute = ~16,700 requests per second. This is very achievable with Phase 1 and Phase 2 below — no distributed databases or complex infrastructure needed.
 
 ### What We Have Today
 
@@ -245,7 +247,7 @@ This works fine for small traffic. But each request waits for all 5 database cal
 - BIGSERIAL primary key — a global counter that all inserts compete for
 - Generated columns (event_date, event_hour) — extra computation on every INSERT
 
-### Phase 1: Stop Hitting the Database for Things That Don't Change (~5K RPS)
+### Phase 1: Stop Hitting the Database for Things That Don't Change (~5K RPS / ~300K per minute)
 
 The biggest win with zero infrastructure changes.
 
@@ -253,50 +255,32 @@ Cache dimension data (features, event types, genders, age buckets) in memory —
 
 Then stop waiting for the INSERT to finish — return 202 Accepted immediately and write in the background. Response time drops from ~50ms to ~2ms.
 
-Result: ~5K RPS on a single server. No new infrastructure. Just code changes.
+Result: ~5K RPS (~300K per minute) on a single server. No new infrastructure. Just code changes.
 
-### Phase 2: Write in Batches (~50K RPS)
+### Phase 2: Write in Batches (~50K RPS / ~3M per minute) ← Target achieved here
 
 One INSERT of 1000 rows is ~100x faster than 1000 individual INSERTs. Buffer events in memory, flush every 100ms as a single multi-row INSERT.
 
-Add a message queue (like Redis or Kafka) as a durable buffer so events aren't lost if the app crashes. Drop foreign key constraints (already validated in app layer) and unused indexes to reduce write overhead.
+Add a message queue (like Redis) as a durable buffer so events aren't lost if the app crashes. Drop foreign key constraints (already validated in app layer) and unused indexes to reduce write overhead.
 
-Result: ~50K RPS.
+Result: ~50K RPS (~3M per minute). This already exceeds the 1M/minute target by 3x on a single server.
 
-### Phase 3: Run Multiple Copies of the App (~200K RPS)
+### Phase 3: Run Multiple Copies of the App (if needed for redundancy)
 
-A load balancer distributes requests across multiple identical app instances (4-8 copies). Each pushes to the same message queue. Workers pull batches and insert into PostgreSQL.
+At 1M per minute you likely don't need this for throughput, but you may want it for high availability. A load balancer distributes requests across 2-3 identical app instances. If one goes down, the others keep serving.
 
-Add PgBouncer (a connection pooler) between workers and PostgreSQL. Tune PostgreSQL with `synchronous_commit = off` for async disk writes — the single biggest throughput win.
-
-Result: ~200K RPS.
-
-### Phase 4: Separate Ingestion from Storage (~500K RPS)
-
-Replace the simple message queue with Apache Kafka — a distributed, durable, high-throughput event log. The track endpoint writes to Kafka (< 1ms), consumers read in batches and insert into PostgreSQL.
-
-Partition the database table by month so INSERTs only touch the current month's smaller indexes. Old months can be archived or dropped.
-
-Result: ~500K RPS.
-
-### Phase 5: Distribute the Database (~1M RPS)
-
-A single PostgreSQL can't handle this write volume. Use Citus (distributed PostgreSQL) to shard the table across multiple servers, or TimescaleDB for automatic time-based partitioning and compression.
-
-Full architecture: 20 app instances → Kafka (16 partitions) → 16 consumers → PgBouncer → distributed PostgreSQL.
-
-Result: 1M RPS.
+Add PgBouncer (a connection pooler) between workers and PostgreSQL. Tune PostgreSQL with `synchronous_commit = off` for async disk writes.
 
 ### Scaling Summary
 
-| Phase | Target RPS | What Changes |
-|-------|-----------|-------------|
-| 0 (Current) | ~100 | Synchronous, 5 DB calls per request |
-| 1 | ~5K | Cache lookups in memory, async response |
-| 2 | ~50K | Batch writes, message queue, drop FKs/indexes |
-| 3 | ~200K | Multiple app instances, connection pooler, PG tuning |
-| 4 | ~500K | Kafka, table partitioning by month |
-| 5 | ~1M | Distributed PostgreSQL, 20 app pods, 16 Kafka consumers |
+| Phase | Per Minute | Per Second | What Changes |
+|-------|-----------|-----------|-------------|
+| 0 (Current) | ~6K | ~100 | Synchronous, 5 DB calls per request |
+| 1 | ~300K | ~5K | Cache lookups in memory, async response |
+| 2 | ~3M | ~50K | Batch writes, message queue, drop FKs/indexes |
+| 3 | ~3M+ | ~50K+ | Multiple instances for high availability |
+
+Phase 2 alone gives 3x headroom over the 1M/minute target.
 
 ### Key Principles
 
@@ -305,6 +289,5 @@ Result: 1M RPS.
 3. Don't make the client wait for the database. Accept, respond, write later.
 4. Cache things that don't change often.
 5. Tune PostgreSQL before adding servers.
-6. Partition tables before sharding databases.
-7. Measure before optimizing.
-8. Analytics events are not bank transactions — losing a few in a crash is acceptable.
+6. Measure before optimizing.
+7. Analytics events are not bank transactions — losing a few in a crash is acceptable.
